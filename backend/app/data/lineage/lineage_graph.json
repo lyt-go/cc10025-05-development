@@ -1,10 +1,20 @@
 {
   "nodes": [
-    "血缘图谱样例3",
-    "血缘图谱样例2",
-    "血缘图谱样例1",
+    "ODS_PAY_DETAIL",
     "SOURCE",
-    "ASSE-0003"
+    "ASSE-0003",
+    "ODS_LOG_DETAIL",
+    "DWD_SETTLE_FACT",
+    "ADS_SALES_RPT",
+    "血缘图谱样例2",
+    "ADS_OPERATE_RPT",
+    "ODS_ORDER_DETAIL",
+    "ODS_REFUND_DETAIL",
+    "ADS_RISK_VIEW",
+    "DWD_AUDIT_FLOW",
+    "血缘图谱样例1",
+    "血缘图谱样例3",
+    "DWD_ORDER_FACT"
   ],
   "edges": [
     {
@@ -18,6 +28,34 @@
     {
       "from": "血缘图谱样例3",
       "to": "血缘图谱样例3"
+    },
+    {
+      "from": "ODS_ORDER_DETAIL",
+      "to": "DWD_SETTLE_FACT"
+    },
+    {
+      "from": "ODS_PAY_DETAIL",
+      "to": "DWD_SETTLE_FACT"
+    },
+    {
+      "from": "DWD_SETTLE_FACT",
+      "to": "ADS_OPERATE_RPT"
+    },
+    {
+      "from": "ODS_LOG_DETAIL",
+      "to": "DWD_AUDIT_FLOW"
+    },
+    {
+      "from": "DWD_AUDIT_FLOW",
+      "to": "ADS_RISK_VIEW"
+    },
+    {
+      "from": "DWD_ORDER_FACT",
+      "to": "ADS_SALES_RPT"
+    },
+    {
+      "from": "ODS_REFUND_DETAIL",
+      "to": "DWD_ORDER_FACT"
     },
     {
       "from": "SOURCE",

@@ -53,7 +53,28 @@ class LineageGraphService(BaseModuleService):
         # 触发变更通知：血缘变更
         self._trigger_change_notice(downstream, upstream, lineage_type)
 
+        # 图谱边发生变化：读入标签派生批次后按新血缘重算下游标签
+        self.recompute_derived_labels()
+
         return entry, f"{self.ENTITY} {entry_id} 已注册，血缘线 {upstream}→{downstream}"
+
+    def recompute_derived_labels(self) -> dict[str, Any]:
+        """血缘图谱读入标签派生批次后，按已核实边重算下游标签。
+
+        实际计算与来源留痕在 LabelBatchService 中完成，这里只做委托，
+        保证修正血缘或注册新边后图谱能按剩余来源重算有效标记。
+        """
+        from app.services.label_batch import LabelBatchService
+
+        return LabelBatchService().recompute()
+
+    def correct_lineage_edge(self, record_id: str, **kwargs: Any) -> tuple[
+        dict[str, Any] | None, str,
+    ]:
+        """修正一条血缘关系并触发派生标签重算（委托给标签批次引擎）。"""
+        from app.services.label_batch import LabelBatchService
+
+        return LabelBatchService().correct_lineage_edge(record_id, **kwargs)
 
     def build_lineage_graph(self) -> dict[str, Any]:
         """构建完整血缘图谱：读取所有血缘记录，合并为图结构。"""

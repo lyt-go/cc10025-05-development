@@ -1,6 +1,15 @@
 import { request } from './client'
 import { moduleMeta } from '@/data/modules'
-import type { ActionResult, EntryRow, OverviewResult, PageResult } from '@/data/types'
+import type {
+  ActionResult,
+  DirectLabelInput,
+  EntryRow,
+  LabelBatch,
+  LabelConflict,
+  DerivedLabel,
+  OverviewResult,
+  PageResult,
+} from '@/data/types'
 
 export { moduleMeta }
 
@@ -59,3 +68,74 @@ export async function loadOverview(): Promise<OverviewResult> {
   if (!response.ok) throw new Error('运营概览读取失败')
   return await response.json()
 }
+
+// ---------- 标签派生批次 ----------
+
+export async function registerLabelBatch(
+  directLabels: DirectLabelInput[],
+  remark = '',
+): Promise<ActionResult & { batch?: LabelBatch }> {
+  const response = await request('/api/label-batches', {
+    method: 'POST',
+    body: JSON.stringify({ direct_labels: directLabels, remark }),
+  })
+  if (!response.ok) throw new Error('标签批次登记失败')
+  return await response.json()
+}
+
+export async function listLabelBatches(): Promise<{ items: LabelBatch[]; total: number }> {
+  const response = await request('/api/label-batches')
+  if (!response.ok) throw new Error('标签批次读取失败')
+  return await response.json()
+}
+
+export async function listDerivedLabels(
+  asset?: string,
+): Promise<{ items: DerivedLabel[]; total: number }> {
+  const query = asset ? `?asset=${encodeURIComponent(asset)}` : ''
+  const response = await request(`/api/label-batches/downstream-labels${query}`)
+  if (!response.ok) throw new Error('下游标签读取失败')
+  return await response.json()
+}
+
+export async function listLabelConflicts(
+  onlyOpen = true,
+): Promise<{ items: LabelConflict[]; total: number }> {
+  const response = await request(`/api/label-batches/conflicts?only_open=${onlyOpen}`)
+  if (!response.ok) throw new Error('标签冲突读取失败')
+  return await response.json()
+}
+
+export async function resolveLabelConflict(
+  conflictId: number,
+  chosenValue: string,
+): Promise<ActionResult> {
+  const response = await request(
+    `/api/label-batches/conflicts/${conflictId}/resolve`,
+    { method: 'POST', body: JSON.stringify({ chosen_value: chosenValue }) },
+  )
+  if (!response.ok) throw new Error('冲突确认失败')
+  return await response.json()
+}
+
+export async function revokeLabelBatch(batchNo: string): Promise<ActionResult> {
+  const response = await request(`/api/label-batches/${batchNo}/revoke`, {
+    method: 'POST',
+  })
+  if (!response.ok) throw new Error('批次撤销失败')
+  return await response.json()
+}
+
+export async function correctLineageEdge(
+  recordId: string,
+  payload: { new_upstream?: string; new_downstream?: string; invalidate?: boolean },
+): Promise<ActionResult> {
+  const response = await request(
+    `/api/label-batches/lineage/${encodeURIComponent(recordId)}/correction`,
+    { method: 'POST', body: JSON.stringify(payload) },
+  )
+  if (!response.ok) throw new Error('血缘修正失败')
+  return await response.json()
+}
+
+export type { EntryRow }

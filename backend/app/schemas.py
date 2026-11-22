@@ -29,3 +29,28 @@ class EntryPayload(BaseModel):
 class ActionPayload(BaseModel):
     action: str
     remark: str | None = None
+
+
+class DirectLabelItem(BaseModel):
+    """批量登记中的一条直接标签。"""
+
+    asset: str
+    dimension: str
+    value: str
+    source: str | None = None
+
+
+class LabelBatchPayload(BaseModel):
+    direct_labels: list[DirectLabelItem] = Field(default_factory=list)
+    remark: str | None = None
+    batch_no: str | None = None
+
+
+class ConflictResolvePayload(BaseModel):
+    chosen_value: str
+
+
+class LineageCorrectionPayload(BaseModel):
+    new_upstream: str | None = None
+    new_downstream: str | None = None
+    invalidate: bool = False

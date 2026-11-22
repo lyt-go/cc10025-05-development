@@ -16,9 +16,13 @@
 │   └── vite.config.ts        dev server 配置（open: false）
 ├── backend/                  FastAPI（Python） 后端
 │   ├── app/routers/resource.py  通用查询/导出/登记/动作接口
+│   ├── app/routers/label_batch.py  标签派生批次专用接口
 │   ├── app/services/<key>.py    每个模块独立领域逻辑
+│   ├── app/services/label_batch.py 标签批量登记与血缘派生引擎
 │   ├── app/services/base.py     共享服务骨架
 │   └── app/store.py          内存数据仓库与示例数据
+├── frontend/                 Vue 3 + Vite + TypeScript 前端
+│   └── src/views/LabelBatchView.vue 标签派生批次工作台
 ├── .gitignore
 └── docker-compose.yml
 ```
@@ -68,6 +72,37 @@ npm run dev
 | 质量报告 | `quality_report` | 质量报告 | 报告编号、关联资产、检核时间 |
 | 回收清理 | `reclaim_job` | 回收任务 | 任务编号、目标资产、回收范围 |
 | 变更通知 | `change_notice` | 变更通知 | 通知编号、关联资产、变更类型 |
+
+## 标签派生批次（批量登记与血缘传播）
+
+单条标签登记只能处理一张表，`label_batch` 引擎把同一批次的直接标签和派生标签
+一起处理：批量登记多张上下游表的直接标签后，图谱沿**已核实**血缘边向下游传播。
+
+计算与留痕规则：
+
+- **沿边传播**：只采纳血缘状态为「已注册/已生效」的边；同一标签经不同路径（含
+  并行边）到达同一张表只保留一个派生标记，但每条来源数据表和已纳入计算的边都会
+  逐条记录，后续重算据此判断是否仍有支持。
+- **互斥冲突**：同一标签维度出现多个互斥值时登记为待确认冲突，确认前不产生任何
+  有效标签值；冲突还会沿链路向下游继承。确认归属（含下游级联）后才成为计算结果。
+- **批次撤销**：撤销只消除由该批支持的标记，再按剩余来源重算；仍有独立依据的
+  派生标签继续有效，失去全部依据的标记移除。
+- **血缘修正**：修正或失效一条血缘边后，图谱按剩余来源与边重算有效标记。
+
+数据产物落盘在 `backend/app/data/labels/`（批次、下游标签、冲突三份 JSON）。
+
+| 接口 | 方法 | 说明 |
+| --- | --- | --- |
+| `/api/label-batches` | POST | 批量登记直接标签并计算派生批次 |
+| `/api/label-batches` | GET | 查看全部批次（含已撤销） |
+| `/api/label-batches/downstream-labels` | GET | 回查下游标签、来源与纳入计算的边（支持 `asset` 过滤） |
+| `/api/label-batches/conflicts` | GET | 互斥等级冲突清单（`only_open`） |
+| `/api/label-batches/conflicts/{id}/resolve` | POST | 确认冲突归属值 |
+| `/api/label-batches/{batch_no}/revoke` | POST | 撤销整次提交并重算 |
+| `/api/label-batches/lineage/{record_id}/correction` | POST | 修正/失效血缘边并重算 |
+
+前端在侧边栏「标签派生批次」（`/label-batches`）提供批量登记、冲突确认、
+批次撤销与来源留痕查看。对应测试见 `backend/test_label_batch.py`。
 
 ## 约定
 
